@@ -46,7 +46,7 @@ https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Demo.mkv
 | **Simulator** | Python + ROS2 | Physics-based vehicle simulation for testing |
 
 <div align="center">
-  <img src="docs/images/hmi_screenshot.png" alt="EVA HMI Interface" width="600"/>
+  <img src="Docs/Images/HMI.png" alt="EVA HMI Interface" width="300"/>
   <p><i>Professional Qt6/QML interface with real-time navigation</i></p>
 </div>
 
