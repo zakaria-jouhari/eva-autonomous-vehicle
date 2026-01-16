@@ -31,7 +31,7 @@ https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Demo.mkv
 ## 🏗️ System Architecture
 
 <div align="center">
-  <img src="Docs/Images/Architecture.png" alt="EVA System Architecture" width="100"/>
+  <img src="Docs/Images/Architecture.png" alt="EVA System Architecture" width="300"/>
   <p><i>Complete system architecture showing all components and communication flow</i></p>
 </div>
 
