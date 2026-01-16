@@ -8,18 +8,12 @@
 **EVA** (Electric Vehicle Assistant) is a complete autonomous navigation system combining a ROS2-based trajectory planning module with a professional Qt6/QML HMI interface.
 
 > 🔄 **This project is an enhanced version of** [eva_trajectory_planning](https://github.com/Zakariajouhari1/eva_trajectory_planning) - A trajectory planning system for autonomous vehicles using A* and Cubic Splines. EVA v2.0 adds a professional HMI interface and complete system integration.
-
+https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Docs/Demo.mp4
 ---
 
 ## 🎥 Demo Video
 
-Watch EVA in action! Click below to see the complete navigation system working in real-time:
-https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Demo.mkv
 
-<!-- Alternative si la vidéo est dans le repo --
-
-<!-- Ou avec un GIF si vous en créez un -->
-▶ Live demo: https://zakariajouhari1.github.io/eva-autonomous-vehicle
 
 
 ---
