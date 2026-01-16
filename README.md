@@ -16,15 +16,10 @@
 Watch EVA in action! Click below to see the complete navigation system working in real-time:
 https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Demo.mkv
 
-<!-- Alternative si la vidéo est dans le repo -->
-<div align="center">
-  <video src="Demo.mkv" width="800" controls>
-    Your browser does not support the video tag.
-  </video>
-</div>
+<!-- Alternative si la vidéo est dans le repo --
 
 <!-- Ou avec un GIF si vous en créez un -->
-![Demo GIF](Docs/Demo.gif)
+[![Watch Demo](docs/media/video-thumb.png)](Docs/Demo.mp4)
 
 
 ---
