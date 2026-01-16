@@ -24,32 +24,18 @@ https://github.com/Zakariajouhari1/eva-autonomous-vehicle/blob/main/Demo.mkv
 </div>
 
 <!-- Ou avec un GIF si vous en créez un -->
-![EVA Demo](Docs/Images/Architecture.png)
+![EVA Demo](Docs/Demo.mp4)
 
 ---
 
 ## 🏗️ System Architecture
 
 <div align="center">
-  <img src="docs/images/Architecture.png" alt="EVA System Architecture" width="800"/>
+  <img src="Docs/Images/Architecture.png" alt="EVA System Architecture" width="800"/>
   <p><i>Complete system architecture showing all components and communication flow</i></p>
 </div>
 
-The system consists of three main modules:
 
-```
-┌──────────────────────┐
-│   EVA Planning      │
-│   (ROS2 + OSRM)     │
-└──────────┬───────────┘
-           │ ROS2 Topics
-           ├──────────────────────┐
-           │                      │
-┌──────────▼──────────────┐  ┌───────▼────────────┐
-│  Vehicle HMI        │  │   Simulator    │
-│  (Qt6 + QML)        │  │   (Python)     │
-└─────────────────────┘  └────────────────┘
-```
 
 ### Component Breakdown
 
