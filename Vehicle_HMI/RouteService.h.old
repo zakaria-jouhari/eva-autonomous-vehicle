@@ -1,0 +1,93 @@
+// RouteService.h
+// Modified to integrate ROS2 trajectory planning
+
+#ifndef ROUTESERVICE_H
+#define ROUTESERVICE_H
+
+#include <QObject>
+#include <QTimer>
+#include <QVariantList>
+#include <QVariantMap>
+
+// ROS2 includes
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <memory>
+
+class RouteService : public QObject
+{
+    Q_OBJECT
+    
+    // Existing properties (keep what you have)
+    // Add these new ROS2 properties
+    Q_PROPERTY(QVariantList globalPath READ globalPath NOTIFY globalPathChanged)
+    Q_PROPERTY(QVariantList localPath READ localPath NOTIFY localPathChanged)
+    Q_PROPERTY(QString routeStatus READ routeStatus NOTIFY routeStatusChanged)
+    Q_PROPERTY(double routeDistance READ routeDistance NOTIFY routeDistanceChanged)
+    Q_PROPERTY(double routeDuration READ routeDuration NOTIFY routeDurationChanged)
+    Q_PROPERTY(int waypointCount READ waypointCount NOTIFY waypointCountChanged)
+    Q_PROPERTY(bool isNavigating READ isNavigating NOTIFY isNavigatingChanged)
+    
+public:
+    explicit RouteService(QObject *parent = nullptr);
+    ~RouteService();
+    
+    // Property getters
+    QVariantList globalPath() const { return m_globalPath; }
+    QVariantList localPath() const { return m_localPath; }
+    QString routeStatus() const { return m_routeStatus; }
+    double routeDistance() const { return m_routeDistance; }
+    double routeDuration() const { return m_routeDuration; }
+    int waypointCount() const { return m_waypointCount; }
+    bool isNavigating() const { return m_isNavigating; }
+    
+public slots:
+    // Called from QML to set navigation destination
+    void navigateTo(double x, double y);
+    void cancelNavigation();
+    void clearRoute();
+    
+signals:
+    void globalPathChanged();
+    void localPathChanged();
+    void routeStatusChanged();
+    void routeDistanceChanged();
+    void routeDurationChanged();
+    void waypointCountChanged();
+    void isNavigatingChanged();
+    void routeReady();
+    void navigationStarted();
+    void navigationCompleted();
+    
+private:
+    // ROS2 setup
+    void initializeROS2();
+    void spinROS2();
+    
+    // ROS2 callbacks
+    void globalPathCallback(const nav_msgs::msg::Path::SharedPtr msg);
+    void localPathCallback(const nav_msgs::msg::Path::SharedPtr msg);
+    void statusCallback(const std_msgs::msg::String::SharedPtr msg);
+    
+    // ROS2 members
+    rclcpp::Node::SharedPtr m_rosNode;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr m_goalPublisher;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_globalPathSubscriber;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_localPathSubscriber;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr m_statusSubscriber;
+    
+    QTimer *m_rosTimer;
+    
+    // Data members
+    QVariantList m_globalPath;
+    QVariantList m_localPath;
+    QString m_routeStatus;
+    double m_routeDistance;
+    double m_routeDuration;
+    int m_waypointCount;
+    bool m_isNavigating;
+};
+
+#endif // ROUTESERVICE_H

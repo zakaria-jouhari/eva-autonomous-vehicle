@@ -1,0 +1,675 @@
+// Main.qml
+// Version sans QtGraphicalEffects (compatible Qt 6)
+
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQuick.Controls 2.15
+import QtLocation 5.15
+import QtPositioning 5.15
+
+import "ui/TopBar"
+import "ui/StatusIndicators"
+import "ui/Background_frame"
+
+Window {
+    id: mainWindow
+    width: 1280
+    height: 720
+    visible: true
+    title: "EVA_COCKPIT"
+    color: "#000000"
+    
+    readonly property double originLat: 33.5731
+    readonly property double originLon: -7.5898
+    property bool mapFullScreen: false
+    
+    function localToGps(x, y) {
+        var metersPerDegreeLat = 111320.0;
+        var metersPerDegreeLon = 111320.0 * Math.cos(originLat * Math.PI / 180.0);
+        var lat = originLat + (y / metersPerDegreeLat);
+        var lon = originLon + (x / metersPerDegreeLon);
+        return {lat: lat, lon: lon};
+    }
+    
+    function gpsToLocal(lat, lon) {
+        var metersPerDegreeLat = 111320.0;
+        var metersPerDegreeLon = 111320.0 * Math.cos(originLat * Math.PI / 180.0);
+        var x = (lon - originLon) * metersPerDegreeLon;
+        var y = (lat - originLat) * metersPerDegreeLat;
+        return {x: x, y: y};
+    }
+    
+    function zoomToRoute() {
+        if (!routeService || routeService.globalPath.length === 0) return;
+        
+        var minLat = 999, maxLat = -999;
+        var minLon = 999, maxLon = -999;
+        
+        for (var i = 0; i < routeService.globalPath.length; i++) {
+            var pt = routeService.globalPath[i];
+            var gps = localToGps(pt.x, pt.y);
+            minLat = Math.min(minLat, gps.lat);
+            maxLat = Math.max(maxLat, gps.lat);
+            minLon = Math.min(minLon, gps.lon);
+            maxLon = Math.max(maxLon, gps.lon);
+        }
+        
+        var centerLat = (minLat + maxLat) / 2;
+        var centerLon = (minLon + maxLon) / 2;
+        navigationMap.center = QtPositioning.coordinate(centerLat, centerLon);
+        
+        var maxDelta = Math.max(maxLat - minLat, maxLon - minLon);
+        if (maxDelta > 0.5) navigationMap.zoomLevel = 10;
+        else if (maxDelta > 0.1) navigationMap.zoomLevel = 12;
+        else if (maxDelta > 0.05) navigationMap.zoomLevel = 13;
+        else if (maxDelta > 0.01) navigationMap.zoomLevel = 15;
+        else navigationMap.zoomLevel = 16;
+    }
+    
+    // Background
+    BackgroundFrame {
+        id: backgroundFrame
+        anchors.fill: parent
+        visible: !mapFullScreen
+    }
+    
+    // Top Bar
+    TopBar {
+        id: topBar
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 60
+        z: 100
+    }
+    
+    // Status Indicators
+    StatusIndicators {
+        id: statusIndicators
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.margins: 20
+        z: 100
+        visible: !mapFullScreen
+    }
+    
+    // NAVIGATION MAP
+    Rectangle {
+        id: mapContainer
+        anchors.top: topBar.bottom
+        anchors.right: parent.right
+        anchors.margins: 10
+        width: mapFullScreen ? parent.width : 400
+        height: mapFullScreen ? parent.height - topBar.height - 20 : 300
+        color: "#1E1E1E"
+        radius: 12
+        border.color: "#4285F4"
+        border.width: 2
+        z: 50
+        
+        // Ombre simulée avec rectangles
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            color: "#40000000"
+            radius: 14
+            z: -1
+        }
+        
+        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        
+        Map {
+            id: navigationMap
+            anchors.fill: parent
+            anchors.margins: 2
+            
+            plugin: Plugin {
+                name: "osm"
+                PluginParameter {
+                    name: "osm.mapping.providersrepository.disabled"
+                    value: "true"
+                }
+            }
+            
+            center: QtPositioning.coordinate(originLat, originLon)
+            zoomLevel: 15
+            
+            MouseArea {
+                anchors.fill: parent
+                
+                onClicked: {
+                    var coord = navigationMap.toCoordinate(Qt.point(mouse.x, mouse.y));
+                    console.log("Navigating to GPS:", coord.latitude, coord.longitude);
+                    
+                    destinationMarker.coordinate = coord;
+                    destinationMarker.visible = true;
+                    
+                    var local = gpsToLocal(coord.latitude, coord.longitude);
+                    console.log("Local coords:", local.x, local.y);
+                    
+                    if (routeService) {
+                        routeService.navigateTo(local.x, local.y);
+                    }
+                }
+                
+                onDoubleClicked: {
+                    mapFullScreen = !mapFullScreen;
+                }
+            }
+            
+            // Route globale (bleue)
+            MapPolyline {
+                line.width: 6
+                line.color: "#4285F4"
+                visible: routeService && routeService.globalPath.length > 0
+                
+                path: {
+                    if (!routeService || !routeService.globalPath) return [];
+                    var coords = [];
+                    for (var i = 0; i < routeService.globalPath.length; i++) {
+                        var pt = routeService.globalPath[i];
+                        var gps = localToGps(pt.x, pt.y);
+                        coords.push(QtPositioning.coordinate(gps.lat, gps.lon));
+                    }
+                    return coords;
+                }
+            }
+            
+            // Route locale (verte)
+            MapPolyline {
+                line.width: 4
+                line.color: "#34A853"
+                visible: routeService && routeService.localPath.length > 0
+                
+                path: {
+                    if (!routeService || !routeService.localPath) return [];
+                    var coords = [];
+                    for (var i = 0; i < routeService.localPath.length; i++) {
+                        var pt = routeService.localPath[i];
+                        var gps = localToGps(pt.x, pt.y);
+                        coords.push(QtPositioning.coordinate(gps.lat, gps.lon));
+                    }
+                    return coords;
+                }
+            }
+            
+            // Marqueur A (départ)
+            MapQuickItem {
+                visible: routeService && routeService.globalPath.length > 0
+                coordinate: {
+                    if (!routeService || !routeService.globalPath || routeService.globalPath.length === 0) {
+                        return QtPositioning.coordinate(0, 0);
+                    }
+                    var pt = routeService.globalPath[0];
+                    var gps = localToGps(pt.x, pt.y);
+                    return QtPositioning.coordinate(gps.lat, gps.lon);
+                }
+                anchorPoint.x: 15
+                anchorPoint.y: 30
+                
+                sourceItem: Rectangle {
+                    width: 30
+                    height: 30
+                    radius: 15
+                    color: "#4285F4"
+                    border.color: "white"
+                    border.width: 3
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "A"
+                        color: "white"
+                        font.bold: true
+                        font.pixelSize: 16
+                    }
+                }
+            }
+            
+            // Marqueur B (arrivée)
+            MapQuickItem {
+                id: destinationMarker
+                visible: false
+                anchorPoint.x: 15
+                anchorPoint.y: 30
+                
+                sourceItem: Rectangle {
+                    width: 30
+                    height: 30
+                    radius: 15
+                    color: "#EA4335"
+                    border.color: "white"
+                    border.width: 3
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "B"
+                        color: "white"
+                        font.bold: true
+                        font.pixelSize: 16
+                    }
+                }
+            }
+            
+            // Position véhicule
+            MapQuickItem {
+                coordinate: QtPositioning.coordinate(originLat, originLon)
+                anchorPoint.x: 20
+                anchorPoint.y: 20
+                
+                sourceItem: Rectangle {
+                    width: 40
+                    height: 40
+                    radius: 20
+                    color: "#34A853"
+                    border.color: "white"
+                    border.width: 4
+                    
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 8
+                        height: 8
+                        radius: 4
+                        color: "white"
+                    }
+                    
+                    SequentialAnimation on scale {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 1.2; duration: 1000; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
+                    }
+                }
+            }
+        }
+        
+        // Bouton plein écran
+        Rectangle {
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 10
+            width: 40
+            height: 40
+            radius: 20
+            color: fullscreenBtn.pressed ? "#333" : (fullscreenBtn.containsMouse ? "#444" : "#1E1E1E")
+            border.color: "#4285F4"
+            border.width: 2
+            z: 10
+            
+            Text {
+                anchors.centerIn: parent
+                text: mapFullScreen ? "⊡" : "⊞"
+                color: "white"
+                font.pixelSize: 20
+            }
+            
+            MouseArea {
+                id: fullscreenBtn
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: mapFullScreen = !mapFullScreen
+            }
+        }
+    }
+    
+    // PANNEAU INFOS (mode normal)
+    Rectangle {
+        anchors.bottom: mapContainer.top
+        anchors.right: parent.right
+        anchors.margins: 10
+        
+        width: mapFullScreen ? 400 : mapContainer.width
+        height: visible ? (routeService && routeService.isNavigating ? 180 : 140) : 0
+        color: "#1E1E1E"
+        radius: 12
+        border.color: "#4285F4"
+        border.width: 2
+        
+        visible: routeService && routeService.waypointCount > 0 && !mapFullScreen
+        z: 51
+        
+        // Ombre simulée
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            color: "#40000000"
+            radius: 14
+            z: -1
+        }
+        
+        Behavior on height { NumberAnimation { duration: 200 } }
+        
+        Column {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+            
+            Row {
+                width: parent.width
+                spacing: 10
+                
+                Rectangle {
+                    width: 36
+                    height: 36
+                    radius: 18
+                    color: "#4285F4"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "🗺"
+                        font.pixelSize: 18
+                    }
+                }
+                
+                Column {
+                    width: parent.width - 90
+                    Text {
+                        text: routeService && routeService.isNavigating ? "Navigation" : "Route"
+                        color: "white"
+                        font.pixelSize: 16
+                        font.bold: true
+                    }
+                    Text {
+                        text: routeService ? routeService.routeStatus : ""
+                        color: "#888"
+                        font.pixelSize: 10
+                        elide: Text.ElideRight
+                        width: parent.width
+                    }
+                }
+                
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: 16
+                    color: closeBtn.containsMouse ? "#EA4335" : "#333"
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: "white"
+                        font.pixelSize: 16
+                    }
+                    
+                    MouseArea {
+                        id: closeBtn
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            if (routeService) {
+                                routeService.clearRoute();
+                                destinationMarker.visible = false;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Row {
+                width: parent.width
+                spacing: 8
+                
+                Rectangle {
+                    width: (parent.width - 16) / 3
+                    height: 55
+                    color: "#2A2A2A"
+                    radius: 6
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? routeService.routeDistance.toFixed(2) : "0.00"
+                            color: "#4285F4"
+                            font.pixelSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "km"
+                            color: "#888"
+                            font.pixelSize: 10
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                
+                Rectangle {
+                    width: (parent.width - 16) / 3
+                    height: 55
+                    color: "#2A2A2A"
+                    radius: 6
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? Math.round(routeService.routeDuration) : "0"
+                            color: "#34A853"
+                            font.pixelSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "min"
+                            color: "#888"
+                            font.pixelSize: 10
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                
+                Rectangle {
+                    width: (parent.width - 16) / 3
+                    height: 55
+                    color: "#2A2A2A"
+                    radius: 6
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? routeService.waypointCount : "0"
+                            color: "#FBBC04"
+                            font.pixelSize: 20
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "pts"
+                            color: "#888"
+                            font.pixelSize: 10
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+            
+            Row {
+                width: parent.width
+                spacing: 8
+                visible: routeService && routeService.isNavigating
+                
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: 36
+                    radius: 6
+                    color: centerBtn.pressed ? "#3367D6" : (centerBtn.containsMouse ? "#5A8DEE" : "#4285F4")
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Centrer"
+                        color: "white"
+                        font.pixelSize: 12
+                    }
+                    
+                    MouseArea {
+                        id: centerBtn
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: zoomToRoute()
+                    }
+                }
+                
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: 36
+                    radius: 6
+                    color: cancelBtn.pressed ? "#C5221F" : (cancelBtn.containsMouse ? "#F44336" : "#EA4335")
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Annuler"
+                        color: "white"
+                        font.pixelSize: 12
+                    }
+                    
+                    MouseArea {
+                        id: cancelBtn
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            if (routeService) routeService.cancelNavigation();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // PANNEAU INFOS (mode plein écran)
+    Rectangle {
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 80
+        
+        width: 380
+        height: 120
+        color: "#1E1E1E"
+        radius: 12
+        border.color: "#4285F4"
+        border.width: 2
+        
+        visible: mapFullScreen && routeService && routeService.waypointCount > 0
+        z: 200
+        
+        // Ombre
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            color: "#40000000"
+            radius: 14
+            z: -1
+        }
+        
+        Column {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 12
+            
+            Row {
+                width: parent.width
+                spacing: 12
+                
+                Text {
+                    text: "🗺 Navigation"
+                    color: "white"
+                    font.pixelSize: 18
+                    font.bold: true
+                }
+                
+                Item { width: parent.width - 250 }
+                
+                Rectangle {
+                    width: 32
+                    height: 32
+                    radius: 16
+                    color: fullscreenCloseBtn.containsMouse ? "#EA4335" : "#333"
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: "white"
+                    }
+                    
+                    MouseArea {
+                        id: fullscreenCloseBtn
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: mapFullScreen = false
+                    }
+                }
+            }
+            
+            Row {
+                width: parent.width
+                spacing: 12
+                
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? routeService.routeDistance.toFixed(2) : "0"
+                            color: "#4285F4"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "km"
+                            color: "#888"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? Math.round(routeService.routeDuration) : "0"
+                            color: "#34A853"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "min"
+                            color: "#888"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    Column {
+                        anchors.centerIn: parent
+                        Text {
+                            text: routeService ? routeService.waypointCount : "0"
+                            color: "#FBBC04"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "points"
+                            color: "#888"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Connections {
+        target: routeService
+        function onRouteReady() {
+            console.log("Route ready, zooming");
+            zoomToRoute();
+        }
+    }
+}

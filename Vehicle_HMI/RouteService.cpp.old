@@ -1,0 +1,221 @@
+// RouteService.cpp
+// Implementation with ROS2 integration
+
+#include "RouteService.h"
+#include <QDebug>
+#include <cmath>
+
+RouteService::RouteService(QObject *parent)
+    : QObject(parent)
+    , m_routeDistance(0.0)
+    , m_routeDuration(0.0)
+    , m_waypointCount(0)
+    , m_isNavigating(false)
+    , m_routeStatus("Ready")
+{
+    qDebug() << "RouteService: Initializing...";
+    
+    // Initialize ROS2
+    initializeROS2();
+    
+    // Timer to spin ROS2 (20 Hz)
+    m_rosTimer = new QTimer(this);
+    connect(m_rosTimer, &QTimer::timeout, this, &RouteService::spinROS2);
+    m_rosTimer->start(50);  // 50ms = 20 Hz
+    
+    qDebug() << "RouteService: Initialized successfully";
+}
+
+RouteService::~RouteService()
+{
+    if (m_rosTimer) {
+        m_rosTimer->stop();
+    }
+    qDebug() << "RouteService: Destroyed";
+}
+
+void RouteService::initializeROS2()
+{
+    try {
+        // Create ROS2 node
+        m_rosNode = rclcpp::Node::make_shared("vehicle_hmi_node");
+        
+        // Publisher for navigation goals
+        m_goalPublisher = m_rosNode->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/goal_pose", 10);
+        
+        // Subscriber for global path (A* + OSRM)
+        m_globalPathSubscriber = m_rosNode->create_subscription<nav_msgs::msg::Path>(
+            "/planning/global_path", 10,
+            std::bind(&RouteService::globalPathCallback, this, std::placeholders::_1));
+        
+        // Subscriber for local path (Cubic spline)
+        m_localPathSubscriber = m_rosNode->create_subscription<nav_msgs::msg::Path>(
+            "/planning/local_path", 10,
+            std::bind(&RouteService::localPathCallback, this, std::placeholders::_1));
+        
+        // Subscriber for planning status
+        m_statusSubscriber = m_rosNode->create_subscription<std_msgs::msg::String>(
+            "/planning/status", 10,
+            std::bind(&RouteService::statusCallback, this, std::placeholders::_1));
+        
+        qDebug() << "ROS2: Node created successfully";
+        qDebug() << "ROS2: Subscribed to /planning/global_path";
+        qDebug() << "ROS2: Subscribed to /planning/local_path";
+        qDebug() << "ROS2: Publishing to /goal_pose";
+        
+    } catch (const std::exception& e) {
+        qCritical() << "ROS2: Failed to initialize:" << e.what();
+        m_routeStatus = "ROS2 initialization failed";
+        emit routeStatusChanged();
+    }
+}
+
+void RouteService::spinROS2()
+{
+    if (m_rosNode) {
+        rclcpp::spin_some(m_rosNode);
+    }
+}
+
+void RouteService::navigateTo(double x, double y)
+{
+    if (!m_goalPublisher) {
+        qWarning() << "ROS2: Goal publisher not initialized";
+        m_routeStatus = "System not ready";
+        emit routeStatusChanged();
+        return;
+    }
+    
+    qDebug() << "RouteService: Navigating to (" << x << "," << y << ")";
+    
+    // Create goal message
+    geometry_msgs::msg::PoseStamped goalMsg;
+    goalMsg.header.stamp = m_rosNode->now();
+    goalMsg.header.frame_id = "odom";
+    goalMsg.pose.position.x = x;
+    goalMsg.pose.position.y = y;
+    goalMsg.pose.position.z = 0.0;
+    goalMsg.pose.orientation.w = 1.0;
+    
+    // Publish goal
+    m_goalPublisher->publish(goalMsg);
+    
+    // Update state
+    m_isNavigating = true;
+    m_routeStatus = "Planning route...";
+    
+    emit isNavigatingChanged();
+    emit routeStatusChanged();
+    emit navigationStarted();
+    
+    qDebug() << "ROS2: Goal published to /goal_pose";
+}
+
+void RouteService::cancelNavigation()
+{
+    qDebug() << "RouteService: Navigation cancelled";
+    
+    m_isNavigating = false;
+    m_routeStatus = "Navigation cancelled";
+    
+    emit isNavigatingChanged();
+    emit routeStatusChanged();
+}
+
+void RouteService::clearRoute()
+{
+    qDebug() << "RouteService: Clearing route";
+    
+    m_globalPath.clear();
+    m_localPath.clear();
+    m_routeDistance = 0.0;
+    m_routeDuration = 0.0;
+    m_waypointCount = 0;
+    m_isNavigating = false;
+    m_routeStatus = "Ready";
+    
+    emit globalPathChanged();
+    emit localPathChanged();
+    emit routeDistanceChanged();
+    emit routeDurationChanged();
+    emit waypointCountChanged();
+    emit isNavigatingChanged();
+    emit routeStatusChanged();
+}
+
+void RouteService::globalPathCallback(const nav_msgs::msg::Path::SharedPtr msg)
+{
+    qDebug() << "ROS2: Received global path with" << msg->poses.size() << "waypoints";
+    
+    m_globalPath.clear();
+    
+    // Convert ROS path to QVariantList for QML
+    for (const auto& pose : msg->poses) {
+        QVariantMap point;
+        point["x"] = pose.pose.position.x;
+        point["y"] = pose.pose.position.y;
+        m_globalPath.append(point);
+    }
+    
+    m_waypointCount = m_globalPath.size();
+    
+    // Calculate route distance
+    double totalDistance = 0.0;
+    for (int i = 0; i < m_globalPath.size() - 1; ++i) {
+        auto p1 = m_globalPath[i].toMap();
+        auto p2 = m_globalPath[i + 1].toMap();
+        double dx = p2["x"].toDouble() - p1["x"].toDouble();
+        double dy = p2["y"].toDouble() - p1["y"].toDouble();
+        totalDistance += std::sqrt(dx * dx + dy * dy);
+    }
+    
+    m_routeDistance = totalDistance / 1000.0;  // Convert to km
+    
+    // Estimate duration (assuming average speed of 40 km/h in city)
+    m_routeDuration = (totalDistance / 1000.0) / 40.0 * 60.0;  // Minutes
+    
+    qDebug() << "Route calculated:" << m_routeDistance << "km," 
+             << m_routeDuration << "min," << m_waypointCount << "waypoints";
+    
+    // Emit signals
+    emit globalPathChanged();
+    emit waypointCountChanged();
+    emit routeDistanceChanged();
+    emit routeDurationChanged();
+    emit routeReady();
+}
+
+void RouteService::localPathCallback(const nav_msgs::msg::Path::SharedPtr msg)
+{
+    m_localPath.clear();
+    
+    for (const auto& pose : msg->poses) {
+        QVariantMap point;
+        point["x"] = pose.pose.position.x;
+        point["y"] = pose.pose.position.y;
+        m_localPath.append(point);
+    }
+    
+    emit localPathChanged();
+}
+
+void RouteService::statusCallback(const std_msgs::msg::String::SharedPtr msg)
+{
+    QString status = QString::fromStdString(msg->data);
+    
+    qDebug() << "ROS2: Planning status:" << status;
+    
+    m_routeStatus = status;
+    
+    // Check if navigation completed successfully
+    if (status.contains("SUCCESS")) {
+        // Route is ready but still navigating
+        qDebug() << "Route planning completed successfully";
+    } else if (status.contains("FAILED")) {
+        m_isNavigating = false;
+        emit isNavigatingChanged();
+    }
+    
+    emit routeStatusChanged();
+}

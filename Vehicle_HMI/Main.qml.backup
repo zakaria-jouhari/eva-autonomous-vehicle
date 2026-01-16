@@ -1,0 +1,503 @@
+// Main.qml
+// Version complète avec affichage de route ROS2
+
+import QtQuick 2.15
+import QtQuick.Window 2.15
+import QtQuick.Controls 2.15
+import QtLocation 5.15
+import QtPositioning 5.15
+
+Window {
+    id: mainWindow
+    width: 1280
+    height: 720
+    visible: true
+    title: "EVA Vehicle HMI - ROS2 Navigation"
+    color: "#000000"
+    
+    // Origine GPS (Casablanca)
+    readonly property double originLat: 33.5731
+    readonly property double originLon: -7.5898
+    
+    // Fonctions de conversion GPS <-> Local
+    function localToGps(x, y) {
+        var metersPerDegreeLat = 111320.0;
+        var metersPerDegreeLon = 111320.0 * Math.cos(originLat * Math.PI / 180.0);
+        
+        var lat = originLat + (y / metersPerDegreeLat);
+        var lon = originLon + (x / metersPerDegreeLon);
+        
+        return {lat: lat, lon: lon};
+    }
+    
+    function gpsToLocal(lat, lon) {
+        var metersPerDegreeLat = 111320.0;
+        var metersPerDegreeLon = 111320.0 * Math.cos(originLat * Math.PI / 180.0);
+        
+        var x = (lon - originLon) * metersPerDegreeLon;
+        var y = (lat - originLat) * metersPerDegreeLat;
+        
+        return {x: x, y: y};
+    }
+    
+    // Map principale
+    Map {
+        id: map
+        anchors.fill: parent
+        
+        plugin: Plugin {
+            name: "osm"
+            PluginParameter {
+                name: "osm.mapping.providersrepository.disabled"
+                value: "true"
+            }
+        }
+        
+        center: QtPositioning.coordinate(originLat, originLon)
+        zoomLevel: 15
+        
+        // Gestion du clic sur la carte
+        MouseArea {
+            anchors.fill: parent
+            
+            onClicked: {
+                var coord = map.toCoordinate(Qt.point(mouse.x, mouse.y));
+                console.log("Clicked GPS:", coord.latitude, coord.longitude);
+                
+                // Ajouter un marqueur de destination
+                destinationMarker.coordinate = coord;
+                destinationMarker.visible = true;
+                
+                // Convertir en coordonnées locales et publier
+                var local = gpsToLocal(coord.latitude, coord.longitude);
+                console.log("Local coords:", local.x, local.y);
+                
+                routeService.navigateTo(local.x, local.y);
+            }
+        }
+        
+        // Route globale (OSRM - bleue)
+        MapPolyline {
+            line.width: 6
+            line.color: "#4285F4"
+            visible: routeService.globalPath.length > 0
+            
+            path: {
+                var coords = [];
+                for (var i = 0; i < routeService.globalPath.length; i++) {
+                    var pt = routeService.globalPath[i];
+                    var gps = localToGps(pt.x, pt.y);
+                    coords.push(QtPositioning.coordinate(gps.lat, gps.lon));
+                }
+                return coords;
+            }
+        }
+        
+        // Route locale (spline - verte)
+        MapPolyline {
+            line.width: 4
+            line.color: "#34A853"
+            visible: routeService.localPath.length > 0
+            
+            path: {
+                var coords = [];
+                for (var i = 0; i < routeService.localPath.length; i++) {
+                    var pt = routeService.localPath[i];
+                    var gps = localToGps(pt.x, pt.y);
+                    coords.push(QtPositioning.coordinate(gps.lat, gps.lon));
+                }
+                return coords;
+            }
+        }
+        
+        // Marqueur de départ (A)
+        MapQuickItem {
+            visible: routeService.globalPath.length > 0
+            
+            coordinate: {
+                if (routeService.globalPath.length === 0) {
+                    return QtPositioning.coordinate(0, 0);
+                }
+                var pt = routeService.globalPath[0];
+                var gps = localToGps(pt.x, pt.y);
+                return QtPositioning.coordinate(gps.lat, gps.lon);
+            }
+            
+            anchorPoint.x: 15
+            anchorPoint.y: 30
+            
+            sourceItem: Rectangle {
+                width: 30
+                height: 30
+                radius: 15
+                color: "#4285F4"
+                border.color: "white"
+                border.width: 3
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "A"
+                    color: "white"
+                    font.bold: true
+                    font.pixelSize: 16
+                }
+            }
+        }
+        
+        // Marqueur de destination (B)
+        MapQuickItem {
+            id: destinationMarker
+            visible: false
+            
+            anchorPoint.x: 15
+            anchorPoint.y: 30
+            
+            sourceItem: Rectangle {
+                width: 30
+                height: 30
+                radius: 15
+                color: "#EA4335"
+                border.color: "white"
+                border.width: 3
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "B"
+                    color: "white"
+                    font.bold: true
+                    font.pixelSize: 16
+                }
+            }
+        }
+        
+        // Position du véhicule (cercle vert)
+        MapQuickItem {
+            coordinate: QtPositioning.coordinate(originLat, originLon)
+            
+            anchorPoint.x: 20
+            anchorPoint.y: 20
+            
+            sourceItem: Rectangle {
+                width: 40
+                height: 40
+                radius: 20
+                color: "#34A853"
+                border.color: "white"
+                border.width: 4
+                
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "white"
+                }
+            }
+        }
+    }
+    
+    // Panneau d'informations de route
+    Rectangle {
+        id: routePanel
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 20
+        
+        width: 380
+        height: routeService.isNavigating ? 200 : 140
+        color: "#1E1E1E"
+        radius: 12
+        border.color: "#4285F4"
+        border.width: 2
+        
+        visible: routeService.waypointCount > 0
+        
+        Behavior on height {
+            NumberAnimation { duration: 200 }
+        }
+        
+        Column {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 12
+            
+            // En-tête
+            Row {
+                width: parent.width
+                spacing: 12
+                
+                Rectangle {
+                    width: 40
+                    height: 40
+                    radius: 20
+                    color: "#4285F4"
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "🗺"
+                        font.pixelSize: 20
+                    }
+                }
+                
+                Column {
+                    width: parent.width - 100
+                    spacing: 4
+                    
+                    Text {
+                        text: routeService.isNavigating ? "Navigation active" : "Route calculée"
+                        color: "white"
+                        font.pixelSize: 18
+                        font.bold: true
+                    }
+                    
+                    Text {
+                        text: routeService.routeStatus
+                        color: "#888"
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                        width: parent.width
+                    }
+                }
+                
+                Button {
+                    text: "✕"
+                    width: 36
+                    height: 36
+                    
+                    background: Rectangle {
+                        color: parent.hovered ? "#EA4335" : "#333"
+                        radius: 18
+                    }
+                    
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 18
+                    }
+                    
+                    onClicked: routeService.clearRoute()
+                }
+            }
+            
+            // Infos distance/durée/points
+            Row {
+                width: parent.width
+                spacing: 12
+                
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+                        
+                        Text {
+                            text: routeService.routeDistance.toFixed(2)
+                            color: "#4285F4"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "km"
+                            color: "#888"
+                            font.pixelSize: 12
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+                        
+                        Text {
+                            text: Math.round(routeService.routeDuration)
+                            color: "#34A853"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "min"
+                            color: "#888"
+                            font.pixelSize: 12
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+                
+                Rectangle {
+                    width: (parent.width - 24) / 3
+                    height: 60
+                    color: "#2A2A2A"
+                    radius: 8
+                    
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+                        
+                        Text {
+                            text: routeService.waypointCount
+                            color: "#FBBC04"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                        Text {
+                            text: "points"
+                            color: "#888"
+                            font.pixelSize: 12
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+            
+            // Boutons (seulement si navigation active)
+            Row {
+                width: parent.width
+                spacing: 12
+                visible: routeService.isNavigating
+                
+                Button {
+                    width: (parent.width - 12) / 2
+                    height: 40
+                    text: "Centrer"
+                    
+                    background: Rectangle {
+                        color: parent.pressed ? "#3367D6" : (parent.hovered ? "#5A8DEE" : "#4285F4")
+                        radius: 8
+                    }
+                    
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    onClicked: zoomToRoute()
+                }
+                
+                Button {
+                    width: (parent.width - 12) / 2
+                    height: 40
+                    text: "Annuler"
+                    
+                    background: Rectangle {
+                        color: parent.pressed ? "#C5221F" : (parent.hovered ? "#F44336" : "#EA4335")
+                        radius: 8
+                    }
+                    
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    onClicked: routeService.cancelNavigation()
+                }
+            }
+        }
+        
+        layer.enabled: true
+        layer.effect: DropShadow {
+            horizontalOffset: 0
+            verticalOffset: 4
+            radius: 12
+            samples: 16
+            color: "#80000000"
+        }
+    }
+    
+    // Fonction pour zoomer sur la route
+    function zoomToRoute() {
+        if (routeService.globalPath.length === 0) return;
+        
+        var minLat = 999, maxLat = -999;
+        var minLon = 999, maxLon = -999;
+        
+        for (var i = 0; i < routeService.globalPath.length; i++) {
+            var pt = routeService.globalPath[i];
+            var gps = localToGps(pt.x, pt.y);
+            
+            minLat = Math.min(minLat, gps.lat);
+            maxLat = Math.max(maxLat, gps.lat);
+            minLon = Math.min(minLon, gps.lon);
+            maxLon = Math.max(maxLon, gps.lon);
+        }
+        
+        var centerLat = (minLat + maxLat) / 2;
+        var centerLon = (minLon + maxLon) / 2;
+        
+        map.center = QtPositioning.coordinate(centerLat, centerLon);
+        
+        var latDelta = maxLat - minLat;
+        var lonDelta = maxLon - minLon;
+        var maxDelta = Math.max(latDelta, lonDelta);
+        
+        if (maxDelta > 0.5) map.zoomLevel = 10;
+        else if (maxDelta > 0.1) map.zoomLevel = 12;
+        else if (maxDelta > 0.05) map.zoomLevel = 13;
+        else if (maxDelta > 0.01) map.zoomLevel = 15;
+        else map.zoomLevel = 16;
+    }
+    
+    // Zoom automatique quand route prête
+    Connections {
+        target: routeService
+        function onRouteReady() {
+            console.log("Route ready, zooming to fit");
+            zoomToRoute();
+        }
+    }
+    
+    // Debug overlay
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.margins: 20
+        width: 250
+        height: 80
+        color: "#CC000000"
+        radius: 8
+        
+        Column {
+            anchors.centerIn: parent
+            spacing: 4
+            
+            Text {
+                text: "ROS2 Status: " + (routeService.waypointCount > 0 ? "✓" : "Waiting...")
+                color: routeService.waypointCount > 0 ? "#34A853" : "#888"
+                font.pixelSize: 12
+            }
+            Text {
+                text: "Waypoints: " + routeService.waypointCount
+                color: "white"
+                font.pixelSize: 12
+            }
+            Text {
+                text: routeService.routeStatus
+                color: "#888"
+                font.pixelSize: 10
+                elide: Text.ElideRight
+                width: 230
+            }
+        }
+    }
+}
+
+import QtGraphicalEffects 1.15

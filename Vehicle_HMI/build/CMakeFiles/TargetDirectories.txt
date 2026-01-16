@@ -1,0 +1,11 @@
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/uninstall.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/Vehicle_HMI_uninstall.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/appVehicle_HMI.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/test.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/edit_cache.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/rebuild_cache.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/list_install_components.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/install.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/install/local.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/install/strip.dir
+/home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/CMakeFiles/appVehicle_HMI_autogen.dir

@@ -1,0 +1,63 @@
+<RCC>
+    <qresource prefix="/">
+        <!-- Fichiers QML principaux -->
+        <file>Main.qml</file>
+        <file>RouteInfoPanel.qml</file>
+        <file>MapRouteDisplay.qml</file>
+        <file>VehicleStatusPanel.qml</file> 
+        <!-- Composants UI -->
+        <file>ui/Navigation/NavigationPanel.qml</file>
+        <file>ui/TopBar/TopBar.qml</file>
+        <file>ui/StatusIndicators/StatusIndicators.qml</file>
+        <file>ui/Background_frame/BackgroundFrame.qml</file>
+        
+        <!-- Assets - Images -->
+        <file>ui/assets/car.png</file>
+        <file>ui/assets/svgtopng/newcar.png</file>
+        <file>ui/assets/background.png</file>
+        <file>ui/assets/Model 3.png</file>
+        <file>ui/assets/battery_icon.png</file>
+        <file>ui/assets/battery_status.png</file>
+        <file>ui/assets/background_frame.png</file>
+        <file>ui/assets/odometer.png</file>
+        <file>ui/assets/bluetooth.png</file>
+        <file>ui/assets/wifi.png</file>
+        <file>ui/assets/weather.png</file>
+        
+        <!-- Assets - SVG -->
+        <file>ui/assets/background.svg</file>
+        <file>ui/assets/Car.svg</file>
+        <file>ui/assets/Dashboard.svg</file>
+        <file>ui/assets/dashboard_mask.svg</file>
+        <file>ui/assets/fuel.svg</file>
+        <file>ui/assets/Light_White.svg</file>
+        <file>ui/assets/Lights.svg</file>
+        <file>ui/assets/Model 3.svg</file>
+        <file>ui/assets/needle.svg</file>
+        <file>ui/assets/newcar.svg</file>
+        <file>ui/assets/Parking lights.svg</file>
+        <file>ui/assets/Parking_lights_white.svg</file>
+        <file>ui/assets/Rare fog lights.svg</file>
+        <file>ui/assets/Rare_fog_lights_red.svg</file>
+        <file>ui/assets/road.svg</file>
+        <file>ui/assets/speedometer.svg</file>
+        <file>ui/assets/thirdRightIcon.svg</file>
+        <file>ui/assets/thirdRightIcon_red.svg</file>
+        <file>ui/assets/tickmark.svg</file>
+        <file>ui/assets/Vector 1.svg</file>
+        <file>ui/assets/Vector 2.svg</file>
+        <file>ui/assets/Vector 70.svg</file>
+        <file>ui/assets/seatbelt_off.svg</file>
+        <file>ui/assets/seatbelt_on.svg</file>
+        <file>ui/assets/brake_off.svg</file>
+        <file>ui/assets/brake_on.svg</file>
+        <file>ui/assets/door_off.svg</file>
+        <file>ui/assets/door_on.svg</file>
+        <file>ui/assets/highbeam_off.svg</file>
+        <file>ui/assets/highbeam_on.svg</file>
+        
+        <!-- Autres -->
+        <file>ui/assets/Info.txt</file>
+        <file>ui/assets/svgtopng.zip</file>
+    </qresource>
+</RCC>

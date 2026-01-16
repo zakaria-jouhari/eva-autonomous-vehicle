@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_appVehicle_HMI_FILE /home/ziko/Vehicle_HMI_QT_QML/Vehicle_HMI/build/appVehicle_HMI)
+set(__QT_DEPLOY_TARGET_appVehicle_HMI_TYPE EXECUTABLE)
