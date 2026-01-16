@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/YOUR_VIDEO_ID_HERE
 </div>
 
 <!-- Ou avec un GIF si vous en créez un -->
-![EVA Demo](docs/images/Architecture.png)
+![EVA Demo](Docs/images/Architecture.png)
 
 ---
 
