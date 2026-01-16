@@ -7,7 +7,7 @@
 
 **EVA** (Electric Vehicle Assistant) is a complete autonomous navigation system combining a ROS2-based trajectory planning module with a professional Qt6/QML HMI interface.
 
-![EVA Demo](demo.mkv)
+![EVA Demo](Demo.mkv)
 
 ## ✨ Features
 
