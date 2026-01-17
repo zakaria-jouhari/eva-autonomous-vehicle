@@ -136,7 +136,6 @@ cd vehicle_hmi/build
 3. **Watch the vehicle** follow the calculated route
 4. **Monitor metrics**: Speed, distance, ETA in real-time
 
-![Usage Flow](docs/images/usage_flow.png)
 
 ---
 
