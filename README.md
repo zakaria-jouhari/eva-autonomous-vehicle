@@ -1,4 +1,4 @@
-# 🚗 EVA - Electric Vehicle Assistant
+#  EVA - Electric Vehicle Assistant
 
 [![ROS2](https://img.shields.io/badge/ROS2-Humble-blue)](https://docs.ros.org/en/humble/)
 [![Qt](https://img.shields.io/badge/Qt-6.10-green)](https://www.qt.io/)
@@ -7,18 +7,18 @@
 
 **EVA** (Electric Vehicle Assistant) is a complete autonomous navigation system combining a ROS2-based trajectory planning module with a professional Qt6/QML HMI interface.
 
-> 🔄 **This project is an enhanced version of** [eva_trajectory_planning](https://github.com/Zakariajouhari1/eva_trajectory_planning) - A trajectory planning system for autonomous vehicles using A* and Cubic Splines. EVA v2.0 adds a professional HMI interface and complete system integration.
+> **This project is an enhanced version of** [eva_trajectory_planning](https://github.com/Zakariajouhari1/eva_trajectory_planning) - A trajectory planning system for autonomous vehicles using A* and Cubic Splines. EVA v2.0 adds a professional HMI interface and complete system integration.
 
 ---
 
-## 🎥 Demo Video
+##  Demo Video
 
 https://vimeo.com/1155126332?fl=ip&fe=ec
 
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 <div align="center">
   <img src="Docs/Images/Architecture.png" alt="EVA System Architecture" width="300"/>
@@ -42,9 +42,9 @@ https://vimeo.com/1155126332?fl=ip&fe=ec
 
 ---
 
-## ✨ Features
+## Features
 
-### 🗺️ Trajectory Planning (ROS2)
+###  Trajectory Planning (ROS2)
 - **OSRM Integration**: Real-world road routing using OpenStreetMap
 - **A* Global Planning**: Optimal path finding on road networks
 - **Cubic Spline Smoothing**: Local trajectory refinement for comfort
@@ -53,7 +53,7 @@ https://vimeo.com/1155126332?fl=ip&fe=ec
 
 
 
-### 🖥️ Professional HMI (Qt6/QML)
+###  Professional HMI (Qt6/QML)
 - **Interactive Map**: OpenStreetMap with route visualization
 - **Real-time Dashboard**: Speed, battery, vehicle status
 - **Responsive Design**: Adapts to any screen size
@@ -62,7 +62,7 @@ https://vimeo.com/1155126332?fl=ip&fe=ec
 
 
 
-### 🚙 Vehicle Simulator
+###  Vehicle Simulator
 - **Physics-based**: Realistic acceleration and movement
 - **Path Following**: Automatic trajectory tracking
 - **Odometry Publishing**: Real-time position updates
@@ -70,7 +70,7 @@ https://vimeo.com/1155126332?fl=ip&fe=ec
 
 
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -129,7 +129,7 @@ cd vehicle_hmi/build
 
 ---
 
-## 📖 Usage
+## Usage
 
 1. **Launch all 3 terminals** as shown above
 2. **Click on the map** to set a destination
@@ -139,7 +139,7 @@ cd vehicle_hmi/build
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 eva-autonomous-vehicle/
@@ -191,7 +191,7 @@ eva-autonomous-vehicle/
 
 ---
 
-## 📊 Performance
+##  Performance
 
 | Metric | Value |
 |--------|-------|
@@ -203,7 +203,7 @@ eva-autonomous-vehicle/
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Planning Node Parameters
 
@@ -230,7 +230,7 @@ property double originLon: -7.5898
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -242,7 +242,7 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📝 Changelog
+## Changelog
 
 ### v2.0.0 (2025-01-15) - Current
 - ✅ Complete HMI integration with Qt6/QML
@@ -260,7 +260,7 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 🐛 Known Issues
+##  Known Issues
 
 - [ ] Offline OSRM server not included (uses public API)
 - [ ] No obstacle detection from sensors yet
@@ -268,7 +268,7 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 🛣️ Roadmap
+## Roadmap
 
 - [ ] **Local OSRM Server**: Embedded routing engine
 - [ ] **Sensor Integration**: LiDAR, Camera obstacle detection
@@ -280,20 +280,20 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👥 Authors
+##  Authors
 
 - **Zakaria Jouhari** - *Planning & Integration* - [@Zakariajouhari1](https://github.com/Zakariajouhari1)
 - **Mohamed Elhaloua** - *HMI Development* - [@MOHAMEDELHALOUA](https://github.com/MOHAMEDELHALOUA)
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - [ROS2](https://docs.ros.org/) - Robot Operating System
 - [OSRM](http://project-osrm.org/) - Open Source Routing Machine
@@ -304,7 +304,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 
-## 📚 Related Projects
+##  Related Projects
 
 - [eva_trajectory_planning v1.0](https://github.com/Zakariajouhari1/eva_trajectory_planning) - Original trajectory planning system
 - [Vehicle_HMI_QT_QML](https://github.com/MOHAMEDELHALOUA/Vehicle_HMI_QT_QML) - HMI component repository
